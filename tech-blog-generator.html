@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TechBlog AI — SEO Content Generator</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090f;
+    --surface: #111118;
+    --card: #161622;
+    --border: #252535;
+    --accent: #6c63ff;
+    --accent2: #00e5c3;
+    --accent3: #ff6584;
+    --text: #e8e8f4;
+    --muted: #888899;
+    --label: #aaaacc;
+    --radius: 14px;
+    --transition: .22s cubic-bezier(.4,0,.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background mesh */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background:
+      radial-gradient(ellipse 700px 500px at 10% 20%, rgba(108,99,255,.12) 0%, transparent 70%),
+      radial-gradient(ellipse 600px 400px at 85% 70%, rgba(0,229,195,.08) 0%, transparent 70%),
+      radial-gradient(ellipse 400px 300px at 50% 50%, rgba(255,101,132,.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 900px; margin: 0 auto; padding: 40px 20px 80px; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 50px; }
+  .logo-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 14px; }
+  .logo-icon {
+    width: 48px; height: 48px; border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 22px; box-shadow: 0 0 30px rgba(108,99,255,.35);
+  }
+  h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: clamp(2rem, 5vw, 3rem);
+    font-weight: 800;
+    background: linear-gradient(135deg, #fff 0%, var(--accent2) 100%);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    line-height: 1.1;
+  }
+  .tagline { color: var(--muted); font-size: .97rem; margin-top: 8px; letter-spacing: .01em; }
+
+  /* Card */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 32px;
+    margin-bottom: 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--transition);
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    opacity: 0;
+    transition: opacity var(--transition);
+  }
+  .card:focus-within::before { opacity: 1; }
+  .card:focus-within { border-color: rgba(108,99,255,.4); }
+
+  .card-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .12em;
+    color: var(--accent2);
+    margin-bottom: 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .card-title span { opacity: .5; font-size: .75em; }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: .83rem; font-weight: 500;
+    color: var(--label);
+    margin-bottom: 7px;
+    letter-spacing: .02em;
+  }
+  .required { color: var(--accent); margin-left: 3px; }
+
+  input[type="text"], input[type="url"], select, textarea {
+    width: 100%;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-size: .93rem;
+    padding: 11px 14px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+    -webkit-appearance: none;
+  }
+  input[type="text"]:focus, input[type="url"]:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(108,99,255,.15);
+  }
+  textarea { resize: vertical; min-height: 90px; line-height: 1.6; }
+  select { cursor: pointer; }
+  select option { background: var(--card); }
+
+  .field { margin-bottom: 20px; }
+  .hint { font-size: .78rem; color: var(--muted); margin-top: 5px; }
+
+  /* Two-col grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+  @media (max-width: 580px) { .grid2 { grid-template-columns: 1fr; } }
+
+  /* Content type pills */
+  .type-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  @media (max-width: 480px) { .type-grid { grid-template-columns: 1fr 1fr; } }
+
+  .type-pill input[type="radio"] { display: none; }
+  .type-pill label {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    padding: 14px 10px;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    cursor: pointer;
+    text-align: center;
+    font-size: .83rem; font-weight: 500;
+    color: var(--muted);
+    background: var(--surface);
+    transition: all var(--transition);
+    margin-bottom: 0;
+  }
+  .type-pill label .icon { font-size: 1.4rem; }
+  .type-pill input:checked + label {
+    border-color: var(--accent);
+    background: rgba(108,99,255,.1);
+    color: var(--text);
+    box-shadow: 0 0 0 2px rgba(108,99,255,.2);
+  }
+  .type-pill label:hover { border-color: rgba(108,99,255,.4); color: var(--text); }
+
+  /* Internal links */
+  #links-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+  .link-row { display: grid; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; }
+  .link-row input { margin-bottom: 0; }
+  .link-row input:first-child { min-width: 0; }
+  .link-row input:nth-child(2) { max-width: 180px; }
+  .btn-icon {
+    width: 36px; height: 36px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.1rem;
+    transition: all var(--transition);
+    flex-shrink: 0;
+  }
+  .btn-icon:hover { border-color: var(--accent3); color: var(--accent3); }
+  .btn-add {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .82rem; color: var(--accent2);
+    background: none; border: none; cursor: pointer;
+    padding: 4px 0; font-family: 'DM Sans', sans-serif;
+    transition: opacity var(--transition);
+  }
+  .btn-add:hover { opacity: .7; }
+
+  /* Generate button */
+  .btn-generate {
+    width: 100%;
+    padding: 16px 24px;
+    border: none; border-radius: 12px;
+    background: linear-gradient(135deg, var(--accent) 0%, #9b5cf6 100%);
+    color: #fff;
+    font-family: 'Syne', sans-serif;
+    font-size: 1.05rem; font-weight: 700;
+    letter-spacing: .03em;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: transform var(--transition), box-shadow var(--transition), opacity var(--transition);
+    box-shadow: 0 4px 30px rgba(108,99,255,.35);
+    position: relative; overflow: hidden;
+  }
+  .btn-generate::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(255,255,255,.12), transparent);
+    opacity: 0; transition: opacity var(--transition);
+  }
+  .btn-generate:hover::after { opacity: 1; }
+  .btn-generate:hover { transform: translateY(-2px); box-shadow: 0 8px 40px rgba(108,99,255,.5); }
+  .btn-generate:active { transform: translateY(0); }
+  .btn-generate:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+  /* Status bar */
+  #status-bar {
+    display: none; align-items: center; gap: 12px;
+    background: rgba(108,99,255,.1); border: 1px solid rgba(108,99,255,.25);
+    border-radius: 10px; padding: 12px 18px;
+    margin-top: 20px; font-size: .88rem; color: var(--accent2);
+  }
+  #status-bar.visible { display: flex; }
+  .spinner {
+    width: 18px; height: 18px; border-radius: 50%;
+    border: 2px solid rgba(108,99,255,.3);
+    border-top-color: var(--accent2);
+    animation: spin 0.8s linear infinite; flex-shrink: 0;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Output */
+  #output-section { display: none; }
+  #output-section.visible { display: block; }
+
+  .output-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 14px; flex-wrap: wrap; gap: 10px;
+  }
+  .output-title {
+    font-family: 'Syne', sans-serif;
+    font-size: .8rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .12em;
+    color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .output-actions { display: flex; gap: 8px; }
+  .btn-small {
+    padding: 7px 14px; border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-family: 'DM Sans', sans-serif; font-size: .82rem;
+    cursor: pointer; display: flex; align-items: center; gap: 6px;
+    transition: all var(--transition);
+  }
+  .btn-small:hover { border-color: var(--accent2); color: var(--accent2); }
+  .btn-small.primary { background: rgba(0,229,195,.1); border-color: rgba(0,229,195,.4); color: var(--accent2); }
+  .btn-small.primary:hover { background: rgba(0,229,195,.2); }
+
+  #output-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    font-size: .88rem; line-height: 1.8;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 600px;
+    overflow-y: auto;
+    font-family: 'Courier New', monospace;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #output-box::-webkit-scrollbar { width: 6px; }
+  #output-box::-webkit-scrollbar-track { background: transparent; }
+  #output-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  /* Preview toggle */
+  .tab-row {
+    display: flex; gap: 4px;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; margin-bottom: 14px;
+    width: fit-content;
+  }
+  .tab-btn {
+    padding: 6px 16px; border-radius: 7px; border: none;
+    background: none; color: var(--muted);
+    font-family: 'DM Sans', sans-serif; font-size: .83rem;
+    cursor: pointer; transition: all var(--transition); font-weight: 500;
+  }
+  .tab-btn.active { background: var(--card); color: var(--text); box-shadow: 0 1px 4px rgba(0,0,0,.3); }
+
+  #preview-box {
+    display: none;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 28px 32px;
+    max-height: 600px; overflow-y: auto;
+    font-size: .93rem; line-height: 1.8;
+    color: var(--text);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  #preview-box.visible { display: block; }
+  #preview-box h1, #preview-box h2, #preview-box h3 {
+    font-family: 'Syne', sans-serif; margin: 1.2em 0 .5em;
+    color: #fff;
+  }
+  #preview-box h1 { font-size: 1.5rem; }
+  #preview-box h2 { font-size: 1.2rem; color: var(--accent2); }
+  #preview-box h3 { font-size: 1rem; color: var(--label); }
+  #preview-box p { margin-bottom: 1em; }
+  #preview-box ul, #preview-box ol { margin-left: 1.5em; margin-bottom: 1em; }
+  #preview-box a { color: var(--accent2); text-decoration: underline; }
+
+  /* Word count badge */
+  .meta-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: .78rem; color: var(--muted);
+    background: rgba(255,255,255,.05); border: 1px solid var(--border);
+    border-radius: 20px; padding: 4px 12px;
+  }
+  .meta-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent2); }
+
+  /* Success toast */
+  #toast {
+    position: fixed; bottom: 28px; right: 28px;
+    background: var(--card); border: 1px solid var(--accent2);
+    border-radius: 10px; padding: 12px 20px;
+    font-size: .87rem; color: var(--accent2);
+    display: none; align-items: center; gap: 8px;
+    box-shadow: 0 8px 30px rgba(0,0,0,.4);
+    z-index: 999; animation: slideIn .3s ease;
+  }
+  #toast.show { display: flex; }
+  @keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+  /* Error */
+  .error-box {
+    background: rgba(255,101,132,.07);
+    border: 1px solid rgba(255,101,132,.25);
+    border-radius: 10px; padding: 14px 18px;
+    font-size: .88rem; color: var(--accent3);
+    margin-top: 16px; display: none;
+  }
+  .error-box.visible { display: block; }
+
+  /* Progress dots */
+  .progress-dots span {
+    display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+    background: var(--accent); margin: 0 2px;
+    animation: bounce 1.2s infinite;
+  }
+  .progress-dots span:nth-child(2) { animation-delay: .15s; }
+  .progress-dots span:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,60%,100% { transform: translateY(0); } 30% { transform: translateY(-5px); } }
+
+  /* Responsive tweaks */
+  @media (max-width: 640px) {
+    .card { padding: 20px 16px; }
+    .link-row { grid-template-columns: 1fr auto; }
+    .link-row input:nth-child(2) { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="wrapper">
+
+  <!-- Header -->
+  <header>
+    <div class="logo-row">
+      <div class="logo-icon">⚡</div>
+      <h1>TechBlog AI</h1>
+    </div>
+    <p class="tagline">SEO-optimized tech blog content — powered by AI, structured for search.</p>
+  </header>
+
+  <!-- Form -->
+  <form id="main-form" autocomplete="off">
+
+    <!-- Core fields -->
+    <div class="card">
+      <div class="card-title">📝 Article Basics <span>Required</span></div>
+
+      <div class="grid2">
+        <div class="field">
+          <label>Primary Keyword <span class="required">*</span></label>
+          <input type="text" id="keyword" placeholder="e.g. best AI coding tools 2025" required>
+          <div class="hint">The main search term this article targets</div>
+        </div>
+        <div class="field">
+          <label>Publish Year <span class="required">*</span></label>
+          <input type="text" id="year" placeholder="e.g. 2025" maxlength="4" value="2025">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Content Type <span class="required">*</span></label>
+        <div class="type-grid">
+          <div class="type-pill">
+            <input type="radio" name="type" id="t1" value="Tech News">
+            <label for="t1"><span class="icon">📰</span>Tech News<br><small style="font-size:.73rem;opacity:.6">800–1,200 words</small></label>
+          </div>
+          <div class="type-pill">
+            <input type="radio" name="type" id="t2" value="Product Review" checked>
+            <label for="t2"><span class="icon">🔍</span>Product Review<br><small style="font-size:.73rem;opacity:.6">1,200–1,800 words</small></label>
+          </div>
+          <div class="type-pill">
+            <input type="radio" name="type" id="t3" value="Explainer">
+            <label for="t3"><span class="icon">💡</span>Explainer<br><small style="font-size:.73rem;opacity:.6">1,500–2,000 words</small></label>
+          </div>
+          <div class="type-pill">
+            <input type="radio" name="type" id="t4" value="Analysis">
+            <label for="t4"><span class="icon">📊</span>Analysis<br><small style="font-size:.73rem;opacity:.6">1,500–2,000 words</small></label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Internal links -->
+    <div class="card">
+      <div class="card-title">🔗 Internal Links <span>Optional · 2–4 links</span></div>
+      <div id="links-list"></div>
+      <button type="button" class="btn-add" onclick="addLink()">＋ Add internal link</button>
+    </div>
+
+    <!-- Extra context -->
+    <div class="card">
+      <div class="card-title">🎯 Extra Context <span>Optional</span></div>
+      <div class="field">
+        <label>Additional Notes / Angle / Competitors to mention</label>
+        <textarea id="extra" placeholder="e.g. Compare with ChatGPT. Target Indian developers. Mention pricing in INR. Focus on free tools only."></textarea>
+        <div class="hint">Give the AI context to write a more targeted, unique article</div>
+      </div>
+    </div>
+
+    <!-- Generate -->
+    <button type="submit" class="btn-generate" id="gen-btn">
+      <span id="btn-text">⚡ Generate Blog Post</span>
+    </button>
+
+    <div id="status-bar">
+      <div class="spinner"></div>
+      <span id="status-msg">Crafting your SEO article...</span>
+      <div class="progress-dots" style="margin-left:auto"><span></span><span></span><span></span></div>
+    </div>
+
+    <div class="error-box" id="error-box"></div>
+
+  </form>
+
+  <!-- Output -->
+  <div id="output-section">
+    <div class="card" style="margin-top:28px;">
+      <div class="output-header">
+        <div class="output-title">✅ Generated Content</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="meta-badge"><span class="dot"></span><span id="word-count">0 words</span></span>
+          <div class="output-actions">
+            <button class="btn-small" onclick="copyHTML()">📋 Copy HTML</button>
+            <button class="btn-small primary" onclick="downloadHTML()">⬇ Download</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="tab-row">
+        <button type="button" class="tab-btn active" onclick="switchTab('code',this)">HTML Code</button>
+        <button type="button" class="tab-btn" onclick="switchTab('preview',this)">Preview</button>
+      </div>
+
+      <div id="output-box"></div>
+      <div id="preview-box"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast">✓ Copied to clipboard!</div>
+
+<script>
+  // Init one blank link row
+  window.addEventListener('DOMContentLoaded', () => { addLink(); });
+
+  let linkCount = 0;
+
+  function addLink() {
+    if (linkCount >= 4) return;
+    const list = document.getElementById('links-list');
+    const row = document.createElement('div');
+    row.className = 'link-row';
+    row.id = 'lr-' + linkCount;
+    row.innerHTML = `
+      <input type="url" placeholder="https://yoursite.com/page" class="link-url">
+      <input type="text" placeholder="Anchor text" class="link-anchor">
+      <button type="button" class="btn-icon" onclick="removeLink('lr-${linkCount}')" title="Remove">✕</button>
+    `;
+    list.appendChild(row);
+    linkCount++;
+  }
+
+  function removeLink(id) {
+    const el = document.getElementById(id);
+    if (el) el.remove();
+  }
+
+  function getInternalLinks() {
+    const rows = document.querySelectorAll('.link-row');
+    const links = [];
+    rows.forEach(r => {
+      const url = r.querySelector('.link-url').value.trim();
+      const anchor = r.querySelector('.link-anchor').value.trim();
+      if (url) links.push({ url, anchor: anchor || url });
+    });
+    return links;
+  }
+
+  function countWords(text) {
+    return text.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().split(' ').filter(Boolean).length;
+  }
+
+  function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const code = document.getElementById('output-box');
+    const preview = document.getElementById('preview-box');
+    if (tab === 'code') {
+      code.style.display = 'block';
+      preview.classList.remove('visible');
+    } else {
+      code.style.display = 'none';
+      preview.classList.add('visible');
+      preview.innerHTML = document.getElementById('output-box').textContent;
+    }
+  }
+
+  async function copyHTML() {
+    const text = document.getElementById('output-box').textContent;
+    await navigator.clipboard.writeText(text);
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 2500);
+  }
+
+  function downloadHTML() {
+    const content = document.getElementById('output-box').textContent;
+    const blob = new Blob([content], { type: 'text/html' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = (document.getElementById('keyword').value.replace(/\s+/g,'-') || 'blog-post') + '.html';
+    a.click();
+  }
+
+  document.getElementById('main-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const keyword = document.getElementById('keyword').value.trim();
+    const year = document.getElementById('year').value.trim();
+    const contentType = document.querySelector('input[name="type"]:checked')?.value || 'Explainer';
+    const extra = document.getElementById('extra').value.trim();
+    const links = getInternalLinks();
+
+    if (!keyword) return;
+
+    // UI state
+    const btn = document.getElementById('gen-btn');
+    const statusBar = document.getElementById('status-bar');
+    const errorBox = document.getElementById('error-box');
+    const outputSection = document.getElementById('output-section');
+    const outputBox = document.getElementById('output-box');
+
+    btn.disabled = true;
+    document.getElementById('btn-text').textContent = '⏳ Generating...';
+    statusBar.classList.add('visible');
+    errorBox.classList.remove('visible');
+    outputSection.classList.remove('visible');
+
+    const statusMessages = [
+      'Researching your keyword...',
+      'Crafting SEO meta data...',
+      'Writing article sections...',
+      'Adding internal links...',
+      'Polishing and finalizing...'
+    ];
+    let si = 0;
+    const statusInterval = setInterval(() => {
+      si = (si + 1) % statusMessages.length;
+      document.getElementById('status-msg').textContent = statusMessages[si];
+    }, 2200);
+
+    // Build the prompt
+    const linksFormatted = links.length
+      ? links.map(l => `- URL: ${l.url} | Anchor: ${l.anchor}`).join('\n')
+      : 'None provided';
+
+    const prompt = `You are an expert tech journalist and SEO strategist. Create high-quality, search-optimized blog content tailored specifically for a tech news website. Output in clean, Blogger/WordPress-friendly HTML.
+
+## INPUT
+
+- **Primary Keyword:** ${keyword}
+- **Content Type:** ${contentType}
+- **Internal Links:**
+${linksFormatted}
+- **Publish Year:** ${year}
+${extra ? `- **Extra Context / Notes:** ${extra}` : ''}
+
+---
+
+## STEP 1 — WORD COUNT
+
+Automatically adjust based on Content Type:
+- Tech News → 800–1,200 words
+- Product Review → 1,200–1,800 words
+- Explainer / Analysis → 1,500–2,000 words
+
+Never pad for length.
+
+---
+
+## STEP 2 — TITLE
+- 50–60 characters
+- Include primary keyword naturally
+- Use power words only if contextually relevant
+- No clickbait
+
+---
+
+## STEP 3 — SEO META DATA
+- SEO Title: 50–60 characters, include primary keyword
+- Meta Description: 150–160 characters, include primary keyword + natural CTA
+
+---
+
+## STEP 4 — ARTICLE STRUCTURE
+
+${contentType === 'Tech News' ? `Follow Tech News structure:
+1. Strong 2–3 sentence intro (keyword placed naturally)
+2. What happened
+3. Key details / features
+4. Why it matters
+5. Industry reaction or context
+6. What happens next
+7. FAQ (3 questions only)
+8. Conclusion
+
+Rules: Short paragraphs (2–3 sentences). No forced keyword density. Concise and factual.` : ''}
+
+${contentType === 'Product Review' ? `Follow Product Review structure:
+1. Introduction
+2. Quick specs overview
+3. Design & Build
+4. Performance
+5. Battery / Software
+6. Pros and Cons (bullet list)
+7. Comparison with a key competitor
+8. Final Verdict
+9. FAQ (4–5 questions)
+
+Rules: Balanced, honest tone. No exaggerated claims. Include practical buying advice.` : ''}
+
+${(contentType === 'Explainer' || contentType === 'Analysis') ? `Follow Explainer/Analysis structure:
+1. Hook introduction
+2. Background context
+3. Deep analysis
+4. Supporting data or trends
+5. Pros & risks
+6. Future outlook
+7. FAQ (4–6 questions)
+8. Strong conclusion
+
+Rules: Add genuine insight. No generic filler. Offer a unique editorial perspective.` : ''}
+
+---
+
+## STEP 5 — SEO RULES
+- Primary keyword in: Title, first 100 words, at least one H2, conclusion
+- Use natural keyword variations throughout
+- Avoid robotic or forced repetition
+- Place a subheading (H2 or H3) at least every 300 words
+
+---
+
+## STEP 6 — INTERNAL LINKING
+${links.length ? `Add these internal links naturally within context:
+${links.map(l => `<a href="${l.url}">${l.anchor}</a>`).join('\n')}` : 'No internal links required.'}
+
+---
+
+## STEP 7 — FAQ SECTION
+- ${contentType === 'Tech News' ? '3 questions' : contentType === 'Product Review' ? '4–5 questions' : '4–6 questions'}
+- 40–60 words per answer
+- Natural, conversational language
+
+---
+
+## STEP 8 — CONCLUSION
+- 100–150 words
+- Summarize key insight/takeaway
+- Reinforce primary keyword naturally
+- Close with a soft CTA
+
+---
+
+## FINAL OUTPUT FORMAT
+
+Output ONLY clean, Blogger/WordPress-ready HTML:
+- Meta description as HTML comment at the top
+- Article body with proper <h2>/<h3> hierarchy
+- Internal links formatted correctly
+- FAQ section in simple HTML
+- Conclusion section
+
+DO NOT include <html>, <head>, <body> tags. Start directly with <!-- Meta Description: ... --> then <article> or <div class="post">.
+
+Avoid: over-optimization, keyword stuffing, identical repetitive structure, padding to 2500 words.`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514',
+          max_tokens: 4000,
+          messages: [{ role: 'user', content: prompt }]
+        })
+      });
+
+      clearInterval(statusInterval);
+
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err?.error?.message || 'API error');
+      }
+
+      const data = await response.json();
+      const html = data.content?.find(b => b.type === 'text')?.text || '';
+
+      outputBox.textContent = html;
+      document.getElementById('preview-box').innerHTML = html;
+      document.getElementById('word-count').textContent = countWords(html) + ' words';
+      outputSection.classList.add('visible');
+      outputSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    } catch (err) {
+      clearInterval(statusInterval);
+      errorBox.textContent = '⚠ ' + (err.message || 'Something went wrong. Please try again.');
+      errorBox.classList.add('visible');
+    } finally {
+      btn.disabled = false;
+      document.getElementById('btn-text').textContent = '⚡ Generate Blog Post';
+      statusBar.classList.remove('visible');
+    }
+  });
+</script>
+</body>
+</html>
